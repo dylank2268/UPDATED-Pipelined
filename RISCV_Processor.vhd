@@ -13,34 +13,33 @@ entity RISCV_Processor is
        iInstLd         : in std_logic;
        iInstAddr       : in std_logic_vector(N-1 downto 0);
        iInstExt        : in std_logic_vector(N-1 downto 0);
-       oALUOut         : out std_logic_vector(N-1 downto 0)); -- TODO: Hook this up to the output of the ALU. It is important for synthesis that you have this output that can effectively be impacted by all other components so they are not optimized away.
-
+       oALUOut         : out std_logic_vector(N-1 downto 0)); 
 end  RISCV_Processor;
 
 
 architecture structure of RISCV_Processor is
 
   -- Required data memory signals
-  signal s_DMemWr       : std_logic; -- TODO: use this signal as the final active high data memory write enable signal
-  signal s_DMemAddr     : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory address input
-  signal s_DMemData     : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory data input
-  signal s_DMemOut      : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the data memory output
+  signal s_DMemWr       : std_logic; 
+  signal s_DMemAddr     : std_logic_vector(N-1 downto 0); 
+  signal s_DMemData     : std_logic_vector(N-1 downto 0); 
+  signal s_DMemOut      : std_logic_vector(N-1 downto 0); 
  
   -- Required register file signals 
-  signal s_RegWr        : std_logic; -- TODO: use this signal as the final active high write enable input to the register file
-  signal s_RegWrAddr    : std_logic_vector(4 downto 0); -- TODO: use this signal as the final destination register address input
-  signal s_RegWrData    : std_logic_vector(N-1 downto 0); -- TODO: use this signal as the final data memory data input
+  signal s_RegWr        : std_logic; 
+  signal s_RegWrAddr    : std_logic_vector(4 downto 0); 
+  signal s_RegWrData    : std_logic_vector(N-1 downto 0);
 
   -- Required instruction memory signals
-  signal s_IMemAddr     : std_logic_vector(N-1 downto 0); -- Do not assign this signal, assign to s_NextInstAddr instead
-  signal s_NextInstAddr : std_logic_vector(N-1 downto 0); -- TODO: use this signal as your intended final instruction memory address input.
-  signal s_Inst         : std_logic_vector(N-1 downto 0) := (others=> '0'); -- TODO: use this signal as the instruction signal 
+  signal s_IMemAddr     : std_logic_vector(N-1 downto 0); 
+  signal s_NextInstAddr : std_logic_vector(N-1 downto 0); 
+  signal s_Inst         : std_logic_vector(N-1 downto 0) := (others=> '0'); 
 
   -- Required halt signal -- for simulation
-  signal s_Halt         : std_logic;  -- TODO: this signal indicates to the simulation that intended program execution has completed. (Opcode: 01 0100)
+  signal s_Halt         : std_logic;  
 
   -- Required overflow signal -- for overflow exception detection
-  signal s_Ovfl         : std_logic;  -- TODO: this signal indicates an overflow exception would have been initiated
+  signal s_Ovfl         : std_logic;  
 
   component mem is
     generic(ADDR_WIDTH : integer;
@@ -116,15 +115,15 @@ signal s_Branch : std_logic; --From control unit
 signal s_BranchTaken : std_logic; --From branch logic 
 signal s_ShiftAmt_ID    : std_logic_vector(4 downto 0);
 
-------------------------
+
 --IF/ID pipeline signals
-------------------------
+
 signal s_IF_ID_pc : std_logic_vector(31 downto 0);
 signal s_IF_IDPC_Plus4 : std_logic_vector(31 downto 0);
 signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
------------------------
+
 --ID/EX pipeline signals
------------------------
+
   -- Control outputs from ID/EX register
   signal s_ID_EX_ALU_SRC     : std_logic;
   signal s_ID_EX_ALU_CTRL    : std_logic_vector(3 downto 0);
@@ -140,9 +139,9 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   signal s_ID_EX_BRANCH     : std_logic;
   signal s_ID_EX_PC_SRC     : std_logic_vector(1 downto 0);
 
-  -----------
+
   --decode stage signals
-  ----------
+
   signal s_ID_RegWr : std_logic;
   signal s_ID_Halt  : std_logic;
 
@@ -159,9 +158,9 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   signal s_ID_EX_FUNCT3      : std_logic_vector(2 downto 0);
 
 
---------------------------
+
 --EX/MEM pipeline signals
--------------------------
+
   -- Control outputs from EX/MEM register
   signal s_EX_MEM_MEM_WRITE   : std_logic;
   signal s_EX_MEM_MEM_READ    : std_logic;
@@ -181,9 +180,9 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   
 
 
-  -----------------
+
   --MEM/WB signals
-  ----------------
+ 
   -- Control outputs from MEM/WB register
   signal s_MEM_WB_REG_WRITE   : std_logic;
   signal s_MEM_WB_WB_SEL      : std_logic_vector(1 downto 0);
@@ -240,7 +239,7 @@ end component;
       A         : in  std_logic_vector(31 downto 0);
       B         : in  std_logic_vector(31 downto 0);
       shift_amt : in  std_logic_vector(4 downto 0);
-      ALU_op    : in  std_logic_vector(3 downto 0);  -- matches your fixed encodings
+      ALU_op    : in  std_logic_vector(3 downto 0);  
       F         : out std_logic_vector(31 downto 0);
       Zero      : out std_logic;
       Overflow  : out std_logic
@@ -325,7 +324,7 @@ component load_store_unit is
     i_rs1     : in  std_logic_vector(31 downto 0);
     i_rs2     : in  std_logic_vector(31 downto 0);
     i_funct3  : in  std_logic_vector(2 downto 0);
-    i_branch  : in  std_logic;  -- from control unit (1 for branch instructions)
+    i_branch  : in  std_logic;  
     o_br_taken: out std_logic
     );
   end component;
@@ -373,16 +372,16 @@ component IF_ID_reg is
     i_ld_unsigned : in  std_logic;
     i_a_sel       : in  std_logic_vector(1 downto 0);
     i_halt        : in  std_logic;
-    i_branch      : in  std_logic;                      -- NEW
-    i_pc_src      : in  std_logic_vector(1 downto 0);  -- NEW
+    i_branch      : in  std_logic;                      
+    i_pc_src      : in  std_logic_vector(1 downto 0); 
     -- Data signal inputs
     i_pc          : in  std_logic_vector(31 downto 0);
     i_pc_plus4    : in  std_logic_vector(31 downto 0);
     i_rs1_val     : in  std_logic_vector(31 downto 0);
     i_rs2_val     : in  std_logic_vector(31 downto 0);
     i_imm         : in  std_logic_vector(31 downto 0);
-    i_immB        : in  std_logic_vector(31 downto 0);  -- NEW
-    i_immJ        : in  std_logic_vector(31 downto 0);  -- NEW
+    i_immB        : in  std_logic_vector(31 downto 0);  
+    i_immJ        : in  std_logic_vector(31 downto 0);  
     i_shift_amt   : in  std_logic_vector(4 downto 0);
     i_rd_addr     : in  std_logic_vector(4 downto 0);
     i_funct3      : in  std_logic_vector(2 downto 0);
@@ -398,16 +397,16 @@ component IF_ID_reg is
     o_ld_unsigned : out std_logic;
     o_a_sel       : out std_logic_vector(1 downto 0);
     o_halt        : out std_logic;
-    o_branch      : out std_logic;                      -- NEW
-    o_pc_src      : out std_logic_vector(1 downto 0);  -- NEW
+    o_branch      : out std_logic;                      
+    o_pc_src      : out std_logic_vector(1 downto 0);  
     -- Data signal outputs
     o_pc          : out std_logic_vector(31 downto 0);
     o_pc_plus4    : out std_logic_vector(31 downto 0);
     o_rs1_val     : out std_logic_vector(31 downto 0);
     o_rs2_val     : out std_logic_vector(31 downto 0);
     o_imm         : out std_logic_vector(31 downto 0);
-    o_immB        : out std_logic_vector(31 downto 0);  -- NEW
-    o_immJ        : out std_logic_vector(31 downto 0);  -- NEW
+    o_immB        : out std_logic_vector(31 downto 0);  
+    o_immJ        : out std_logic_vector(31 downto 0);  
     o_shift_amt   : out std_logic_vector(4 downto 0);
     o_rd_addr     : out std_logic_vector(4 downto 0);
     o_funct3      : out std_logic_vector(2 downto 0)
@@ -511,13 +510,13 @@ begin
     i_clk       => iCLK,
     i_rst       => iRST,
     i_halt      => s_Halt,
-    i_pc_src    => s_ID_EX_PC_SRC,     -- From ID/EX register (EX stage)
-    i_br_taken  => s_BranchTaken,      -- From branch logic (EX stage)
-    i_ex_pc     => s_ID_EX_PC,         -- ✅ FIX: PC from ID/EX (EX stage)
-    i_rs1_val   => s_ID_EX_RS1_VAL,    -- From ID/EX register (EX stage)
-    i_immI      => s_ID_EX_IMMI,       -- From ID/EX register (EX stage)
-    i_immB      => s_ID_EX_IMMB,       -- From ID/EX register (EX stage)
-    i_immJ      => s_ID_EX_IMMJ,       -- From ID/EX register (EX stage)
+    i_pc_src    => s_ID_EX_PC_SRC,   
+    i_br_taken  => s_BranchTaken,     
+    i_ex_pc     => s_ID_EX_PC,         
+    i_rs1_val   => s_ID_EX_RS1_VAL, 
+    i_immI      => s_ID_EX_IMMI,       
+    i_immB      => s_ID_EX_IMMB,       
+    i_immJ      => s_ID_EX_IMMJ,       
     o_pc        => s_Curr_PC,
     o_pc_plus4  => s_PCPlus4,
     o_imem_addr => s_NextInstAddr
@@ -536,9 +535,9 @@ begin
   );
 
 
-  -----------------------
+ 
   --STAGE 2 DECODE
-  ----------------------
+  
     -- Decode instruction fields
   s_opcode <= s_IF_ID_Inst(6 downto 0);
   s_rd     <= s_IF_ID_Inst(11 downto 7);
@@ -581,7 +580,7 @@ REGFILE: reg
 	  RS1 => s_rs1,
 	  RS2 => s_rs2,
 	  DATA_IN => s_RegWrData, --From WB Mux
-	  W_SEL => s_RegWrAddr, --RD 
+	  W_SEL => s_RegWrAddr, --RD
 	  WE => s_RegWr,
 	  RST => iRST,
 	  CLK => iCLK,
@@ -612,9 +611,9 @@ REGFILE: reg
 
 
 
-  -------------------
+  
   --ID/EX pipeline
-  -------------------
+
     -- ID/EX Pipeline Register
   ID_EX_PIPE: ID_EX_reg
     port map(
@@ -635,16 +634,16 @@ REGFILE: reg
       -- Data inputs
       i_pc          => s_IF_ID_PC,
       i_pc_plus4    => s_IF_IDPC_Plus4,
-      i_rs1_val     => s_rs1_val, --From reg 
-      i_rs2_val     => s_rs2_val, --from reg
+      i_rs1_val     => s_rs1_val, 
+      i_rs2_val     => s_rs2_val, 
       i_imm         => s_immI,
       i_immB        => s_immB,
       i_immJ        => s_immJ,
       i_shift_amt   => s_ShiftAmt_ID,
       i_rd_addr     => s_rd,
       i_funct3      => s_funct3,
-      i_branch      => s_Branch, --FOR BRANCH SIGNAL
-      i_pc_src      => PCSrc, --Might be a problem?
+      i_branch      => s_Branch, 
+      i_pc_src      => PCSrc,
       o_alu_src     => s_ID_EX_ALU_SRC,
       o_alu_ctrl    => s_ID_EX_ALU_CTRL,
       o_mem_write   => s_ID_EX_MEM_WRITE,
@@ -669,9 +668,9 @@ REGFILE: reg
       o_rd_addr     => s_ID_EX_RD_ADDR,
       o_funct3      => s_ID_EX_FUNCT3
     );
-  -------------------
+ 
   --EXECUTE STAGE
-  -------------------
+ 
   --ALU A select
   with s_ID_EX_ASEL select
     s_ALUInA <= s_ID_EX_RS1_VAL       when "00",
@@ -694,10 +693,10 @@ MUX_ALU_B: mux2t1_N
 ALU0: ALUUnit
   port map(
     A         => s_ALUInA,
-    B         => s_ALUInB, --select between rs1 and PC
+    B         => s_ALUInB, 
     shift_amt => s_ID_EX_SHIFT_AMT,
     ALU_op    => s_ID_EX_ALU_CTRL,    
-    F         => s_ALURes, --ALU Result
+    F         => s_ALURes, 
     Zero      => s_ALUZero,
     Overflow  => s_ALUOvfl);
 
@@ -794,11 +793,11 @@ ALU0: ALUUnit
 MUX_WB: mux4t1_N
   generic map(N => 32)
   port map(
-    i_S  => s_MEM_WB_WB_SEL,       -- 2-bit select from Control Unit
+    i_S  => s_MEM_WB_WB_SEL,      
     i_D0 => s_MEM_WB_ALU_RESULT,
     i_D1 => s_MEM_WB_MEM_DATA,
     i_D2 => s_MEM_WB_PC_PLUS4,
-    i_D3 => (others => '0'), --Don't need, so 0
+    i_D3 => (others => '0'), 
     o_O  => s_WBData
   );
   -- Writeback to register file

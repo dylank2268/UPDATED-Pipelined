@@ -25,7 +25,6 @@ entity PCFetch is
 end entity PCFetch;
 
 architecture rtl of PCFetch is
-  -- Internal PC signals as unsigned for easy arithmetic
   signal s_pc_reg    : unsigned(31 downto 0);
   signal s_pc_next   : unsigned(31 downto 0);
   signal s_pc_plus4  : unsigned(31 downto 0);
@@ -40,9 +39,9 @@ architecture rtl of PCFetch is
   constant PC_SRC_JALR : std_logic_vector(1 downto 0) := "11"; -- JALR target
 
 begin
-  -------------------------------------------------------------------
+ 
   -- Compute candidate next-PCs
-  -------------------------------------------------------------------
+ 
   -- PC + 4 (for sequential execution from current fetch PC)
   s_pc_plus4 <= s_pc_reg + to_unsigned(4, 32);
 
@@ -55,18 +54,16 @@ begin
   -- JALR target: rs1 + I-imm
   s_jalr_tgt <= unsigned(i_rs1_val) + unsigned(i_immI);
 
-  -------------------------------------------------------------------
+
   -- Next-PC mux
-  -------------------------------------------------------------------
+ 
   process(i_pc_src, s_pc_plus4, s_br_tgt, s_jal_tgt, s_jalr_tgt, i_br_taken)
   begin
     case i_pc_src is
       when PC_SRC_SEQ =>
-        -- Normal fall-through
         s_pc_next <= s_pc_plus4;
 
       when PC_SRC_BR =>
-        -- Only branch if taken; otherwise fall through
         if i_br_taken = '1' then
           s_pc_next <= s_br_tgt;
         else
@@ -84,28 +81,25 @@ begin
     end case;
   end process;
 
-  -------------------------------------------------------------------
+ 
   -- PC register with reset vector + halt
-  -------------------------------------------------------------------
+ 
   process(i_clk, i_rst)
   begin
     if i_rst = '1' then
-      -- Start from reset vector (e.g., 0x0040_0000)
       s_pc_reg <= G_RESET_VECTOR;
     elsif rising_edge(i_clk) then
-      -- Halt means "hold PC"
       if i_halt = '0' then
         s_pc_reg <= s_pc_next;
       end if;
     end if;
   end process;
 
-  -------------------------------------------------------------------
+
   -- Outputs
-  -------------------------------------------------------------------
+
   o_pc        <= std_logic_vector(s_pc_reg);
   o_pc_plus4  <= std_logic_vector(s_pc_plus4);
-  -- Instruction memory address is just the current PC
   o_imem_addr <= std_logic_vector(s_pc_reg);
 
 end architecture rtl;

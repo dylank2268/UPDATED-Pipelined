@@ -1,3 +1,4 @@
+-- Dylan Kramer and Michael Berg
 -- Pipeline Register: MEM/WB
 -- Stores control signals and data between Memory and Writeback stages
 library IEEE;
@@ -49,7 +50,7 @@ architecture structural of MEM_WB_reg is
   
 begin
 
-  -- Control signals (single bit)
+
   REG_WRITE_REG: dffg
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_reg_write, o_Q => o_reg_write);
@@ -58,7 +59,7 @@ begin
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_halt, o_Q => o_halt);
 
-  -- Control signals (multi-bit)
+
   WB_SEL_REG: dffg_N
     generic map(N => 2)
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
@@ -69,7 +70,7 @@ begin
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_rd_addr, o_Q => o_rd_addr);
 
-  -- Data signals (32-bit)
+  
   ALU_RESULT_REG: dffg_N
     generic map(N => 32)
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',

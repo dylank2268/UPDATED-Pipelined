@@ -1,3 +1,4 @@
+-- Dylan Kramer and Michael Berg
 -- Pipeline Register: EX/MEM
 -- Stores control signals and ALU results between Execute and Memory stages
 library IEEE;

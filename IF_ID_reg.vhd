@@ -1,3 +1,4 @@
+-- Dylan Kramer and Michael Berg
 -- Pipeline Register: IF/ID
 -- Stores instruction and PC information between Fetch and Decode stages
 library IEEE;
