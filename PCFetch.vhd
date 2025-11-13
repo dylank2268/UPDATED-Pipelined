@@ -13,7 +13,8 @@ entity PCFetch is
     i_halt      : in  std_logic;
     i_pc_src    : in  std_logic_vector(1 downto 0); -- SEQ, BR_TGT, JAL_TGT, JALR_TGT
     i_br_taken  : in  std_logic;
-    i_rs1_val   : in  std_logic_vector(31 downto 0); -- rs1 value
+    i_ex_pc     : in  std_logic_vector(31 downto 0); -- PC from EX stage (for branch/jump target calculation)
+    i_rs1_val   : in  std_logic_vector(31 downto 0); -- rs1 value (for JALR)
     i_immI      : in  std_logic_vector(31 downto 0); -- I-type imm (JALR)
     i_immB      : in  std_logic_vector(31 downto 0); -- B-type imm (branch)
     i_immJ      : in  std_logic_vector(31 downto 0); -- J-type imm (JAL)
@@ -24,7 +25,6 @@ entity PCFetch is
 end entity PCFetch;
 
 architecture rtl of PCFetch is
-
   -- Internal PC signals as unsigned for easy arithmetic
   signal s_pc_reg    : unsigned(31 downto 0);
   signal s_pc_next   : unsigned(31 downto 0);
@@ -40,20 +40,19 @@ architecture rtl of PCFetch is
   constant PC_SRC_JALR : std_logic_vector(1 downto 0) := "11"; -- JALR target
 
 begin
-
   -------------------------------------------------------------------
   -- Compute candidate next-PCs
   -------------------------------------------------------------------
-  -- PC + 4
+  -- PC + 4 (for sequential execution from current fetch PC)
   s_pc_plus4 <= s_pc_reg + to_unsigned(4, 32);
 
-  -- Branch target: PC + B-imm (already sign-extended before this)
-  s_br_tgt   <= s_pc_reg + unsigned(i_immB);
+  -- Branch target: EX_PC + B-imm (use PC from EX stage, not current fetch PC)
+  s_br_tgt   <= unsigned(i_ex_pc) + unsigned(i_immB);
 
-  -- JAL target: PC + J-imm
-  s_jal_tgt  <= s_pc_reg + unsigned(i_immJ);
+  -- JAL target: EX_PC + J-imm (use PC from EX stage, not current fetch PC)
+  s_jal_tgt  <= unsigned(i_ex_pc) + unsigned(i_immJ);
 
-  -- JALR target: rs1 + I-imm (you can mask bit 0 later if you want strict alignment)
+  -- JALR target: rs1 + I-imm
   s_jalr_tgt <= unsigned(i_rs1_val) + unsigned(i_immI);
 
   -------------------------------------------------------------------

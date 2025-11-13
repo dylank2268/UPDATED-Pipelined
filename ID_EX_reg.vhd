@@ -19,12 +19,16 @@ entity ID_EX_reg is
     i_ld_unsigned : in  std_logic;
     i_a_sel       : in  std_logic_vector(1 downto 0);
     i_halt        : in  std_logic;
+    i_branch      : in  std_logic;                      -- NEW
+    i_pc_src      : in  std_logic_vector(1 downto 0);  -- NEW
     -- Data signal inputs
     i_pc          : in  std_logic_vector(31 downto 0);
     i_pc_plus4    : in  std_logic_vector(31 downto 0);
     i_rs1_val     : in  std_logic_vector(31 downto 0);
     i_rs2_val     : in  std_logic_vector(31 downto 0);
     i_imm         : in  std_logic_vector(31 downto 0);
+    i_immB        : in  std_logic_vector(31 downto 0);  -- NEW
+    i_immJ        : in  std_logic_vector(31 downto 0);  -- NEW
     i_shift_amt   : in  std_logic_vector(4 downto 0);
     i_rd_addr     : in  std_logic_vector(4 downto 0);
     i_funct3      : in  std_logic_vector(2 downto 0);
@@ -40,12 +44,16 @@ entity ID_EX_reg is
     o_ld_unsigned : out std_logic;
     o_a_sel       : out std_logic_vector(1 downto 0);
     o_halt        : out std_logic;
+    o_branch      : out std_logic;                      -- NEW
+    o_pc_src      : out std_logic_vector(1 downto 0);  -- NEW
     -- Data signal outputs
     o_pc          : out std_logic_vector(31 downto 0);
     o_pc_plus4    : out std_logic_vector(31 downto 0);
     o_rs1_val     : out std_logic_vector(31 downto 0);
     o_rs2_val     : out std_logic_vector(31 downto 0);
     o_imm         : out std_logic_vector(31 downto 0);
+    o_immB        : out std_logic_vector(31 downto 0);  -- NEW
+    o_immJ        : out std_logic_vector(31 downto 0);  -- NEW
     o_shift_amt   : out std_logic_vector(4 downto 0);
     o_rd_addr     : out std_logic_vector(4 downto 0);
     o_funct3      : out std_logic_vector(2 downto 0)
@@ -109,6 +117,11 @@ begin
   HALT_REG: dffg
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_halt, o_Q => o_halt);
+  
+  -- NEW: Branch control signal
+  BRANCH_REG: dffg
+    port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
+             i_D => i_branch, o_Q => o_branch);
 
   -- Control signals (multi-bit)
   ALU_CTRL_REG: dffg_N
@@ -141,6 +154,12 @@ begin
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_rd_addr, o_Q => o_rd_addr);
 
+  -- NEW: PC source control signal
+  PC_SRC_REG: dffg_N
+    generic map(N => 2)
+    port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
+             i_D => i_pc_src, o_Q => o_pc_src);
+
   -- Data signals (32-bit)
   PC_REG: dffg_N
     generic map(N => 32)
@@ -166,5 +185,16 @@ begin
     generic map(N => 32)
     port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
              i_D => i_imm, o_Q => o_imm);
+
+  -- NEW: Branch immediates
+  IMMB_REG: dffg_N
+    generic map(N => 32)
+    port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
+             i_D => i_immB, o_Q => o_immB);
+             
+  IMMJ_REG: dffg_N
+    generic map(N => 32)
+    port map(i_CLK => i_CLK, i_RST => i_RST, i_WE => '1',
+             i_D => i_immJ, o_Q => o_immJ);
 
 end structural;

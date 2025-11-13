@@ -137,6 +137,8 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   signal s_ID_EX_LD_UNSIGNED : std_logic;
   signal s_ID_EX_ASEL       : std_logic_vector(1 downto 0);
   signal s_ID_EX_HALT        : std_logic;
+  signal s_ID_EX_BRANCH     : std_logic;
+  signal s_ID_EX_PC_SRC     : std_logic_vector(1 downto 0);
 
   -----------
   --decode stage signals
@@ -149,7 +151,9 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   signal s_ID_EX_PC_PLUS4    : std_logic_vector(31 downto 0);
   signal s_ID_EX_RS1_VAL     : std_logic_vector(31 downto 0);
   signal s_ID_EX_RS2_VAL     : std_logic_vector(31 downto 0);
-  signal s_ID_EX_IMM         : std_logic_vector(31 downto 0);
+  signal s_ID_EX_IMMI         : std_logic_vector(31 downto 0);
+  signal s_ID_EX_IMMB       : std_logic_vector(31 downto 0);
+  signal s_ID_EX_IMMJ       : std_logic_vector(31 downto 0);
   signal s_ID_EX_SHIFT_AMT   : std_logic_vector(4 downto 0);
   signal s_ID_EX_RD_ADDR     : std_logic_vector(4 downto 0);
   signal s_ID_EX_FUNCT3      : std_logic_vector(2 downto 0);
@@ -172,7 +176,9 @@ signal s_IF_ID_Inst : std_logic_vector(31 downto 0);
   signal s_EX_MEM_RS2_VAL     : std_logic_vector(31 downto 0);
   signal s_EX_MEM_PC_PLUS4    : std_logic_vector(31 downto 0);
   signal s_EX_MEM_RD_ADDR     : std_logic_vector(4 downto 0);
-  signal S_EX_MEM_OVERFLOW    : std_logic;
+  signal s_EX_MEM_OVERFLOW    : std_logic;
+
+  
 
 
   -----------------
@@ -278,20 +284,21 @@ end component;
 --PC Fetch component instantiation
   component PCFetch is
     generic (G_RESET_VECTOR : unsigned(31 downto 0) := x"00000000");
-    port (
-      i_clk       : in  std_logic;
-      i_rst       : in  std_logic;
-      i_halt      : in  std_logic;
-      i_pc_src    : in  std_logic_vector(1 downto 0);    -- SEQ, BR_TGT, JAL_TGT, JALR_TGT
-      i_br_taken  : in  std_logic;
-      i_rs1_val   : in  std_logic_vector(31 downto 0); -- for JALR
-      i_immI      : in  std_logic_vector(31 downto 0);
-      i_immB      : in  std_logic_vector(31 downto 0);
-      i_immJ      : in  std_logic_vector(31 downto 0);
-      o_pc        : out std_logic_vector(31 downto 0);
-      o_pc_plus4  : out std_logic_vector(31 downto 0);
-      o_imem_addr : out std_logic_vector(31 downto 0)
-    );
+    port(
+    i_clk       : in  std_logic;
+    i_rst       : in  std_logic;
+    i_halt      : in  std_logic;
+    i_pc_src    : in  std_logic_vector(1 downto 0); -- SEQ, BR_TGT, JAL_TGT, JALR_TGT
+    i_br_taken  : in  std_logic;
+    i_ex_pc     : in  std_logic_vector(31 downto 0); -- PC from EX stage (for branch/jump target calculation)
+    i_rs1_val   : in  std_logic_vector(31 downto 0); -- rs1 value (for JALR)
+    i_immI      : in  std_logic_vector(31 downto 0); -- I-type imm (JALR)
+    i_immB      : in  std_logic_vector(31 downto 0); -- B-type imm (branch)
+    i_immJ      : in  std_logic_vector(31 downto 0); -- J-type imm (JAL)
+    o_pc        : out std_logic_vector(31 downto 0);
+    o_pc_plus4  : out std_logic_vector(31 downto 0);
+    o_imem_addr : out std_logic_vector(31 downto 0)
+  );
   end component;
 
   --Load and store unit instantiation
@@ -351,8 +358,8 @@ component IF_ID_reg is
   end component;
   --ID/EX pipeline
   component ID_EX_reg is
-   port(
-    i_CLK         : in  std_logic;
+    port(
+      i_CLK         : in  std_logic;
     i_RST         : in  std_logic;
     -- Control signal inputs
     i_alu_src     : in  std_logic;
@@ -366,12 +373,16 @@ component IF_ID_reg is
     i_ld_unsigned : in  std_logic;
     i_a_sel       : in  std_logic_vector(1 downto 0);
     i_halt        : in  std_logic;
+    i_branch      : in  std_logic;                      -- NEW
+    i_pc_src      : in  std_logic_vector(1 downto 0);  -- NEW
     -- Data signal inputs
     i_pc          : in  std_logic_vector(31 downto 0);
     i_pc_plus4    : in  std_logic_vector(31 downto 0);
     i_rs1_val     : in  std_logic_vector(31 downto 0);
     i_rs2_val     : in  std_logic_vector(31 downto 0);
     i_imm         : in  std_logic_vector(31 downto 0);
+    i_immB        : in  std_logic_vector(31 downto 0);  -- NEW
+    i_immJ        : in  std_logic_vector(31 downto 0);  -- NEW
     i_shift_amt   : in  std_logic_vector(4 downto 0);
     i_rd_addr     : in  std_logic_vector(4 downto 0);
     i_funct3      : in  std_logic_vector(2 downto 0);
@@ -387,12 +398,16 @@ component IF_ID_reg is
     o_ld_unsigned : out std_logic;
     o_a_sel       : out std_logic_vector(1 downto 0);
     o_halt        : out std_logic;
+    o_branch      : out std_logic;                      -- NEW
+    o_pc_src      : out std_logic_vector(1 downto 0);  -- NEW
     -- Data signal outputs
     o_pc          : out std_logic_vector(31 downto 0);
     o_pc_plus4    : out std_logic_vector(31 downto 0);
     o_rs1_val     : out std_logic_vector(31 downto 0);
     o_rs2_val     : out std_logic_vector(31 downto 0);
     o_imm         : out std_logic_vector(31 downto 0);
+    o_immB        : out std_logic_vector(31 downto 0);  -- NEW
+    o_immJ        : out std_logic_vector(31 downto 0);  -- NEW
     o_shift_amt   : out std_logic_vector(4 downto 0);
     o_rd_addr     : out std_logic_vector(4 downto 0);
     o_funct3      : out std_logic_vector(2 downto 0)
@@ -490,22 +505,23 @@ begin
   -- TODO: Implement the rest of your processor below this comment! 
 
   --PC fetch unit
-  PCU: PCFetch
-    generic map(G_RESET_VECTOR => x"00400000") --Reset vector 00400000 so PC carries full address; needed for AUIPC to work
-    port map(
-      i_clk=> iCLK,
-      i_rst=> iRST,
-      i_halt=> s_Halt,
-      i_pc_src => PCSrc,
-      i_br_taken => s_BranchTaken, 
-      i_rs1_val   => s_rs1_val,
-      i_immI      => s_immI,
-      i_immB      => s_immB, 
-      i_immJ      => s_immJ,
-      o_pc        => s_Curr_PC, --Current PC
-      o_pc_plus4  => s_PCPlus4, --PC + 4
-      o_imem_addr => s_NextInstAddr --Feeds IMEM the addr
-    );
+ PCU: PCFetch
+  generic map(G_RESET_VECTOR => x"00400000")
+  port map(
+    i_clk       => iCLK,
+    i_rst       => iRST,
+    i_halt      => s_Halt,
+    i_pc_src    => s_ID_EX_PC_SRC,     -- From ID/EX register (EX stage)
+    i_br_taken  => s_BranchTaken,      -- From branch logic (EX stage)
+    i_ex_pc     => s_ID_EX_PC,         -- ✅ FIX: PC from ID/EX (EX stage)
+    i_rs1_val   => s_ID_EX_RS1_VAL,    -- From ID/EX register (EX stage)
+    i_immI      => s_ID_EX_IMMI,       -- From ID/EX register (EX stage)
+    i_immB      => s_ID_EX_IMMB,       -- From ID/EX register (EX stage)
+    i_immJ      => s_ID_EX_IMMJ,       -- From ID/EX register (EX stage)
+    o_pc        => s_Curr_PC,
+    o_pc_plus4  => s_PCPlus4,
+    o_imem_addr => s_NextInstAddr
+  );
     --IF/ID pipeline register
   IF_ID_PIPE: IF_ID_reg
    port map(
@@ -588,20 +604,12 @@ REGFILE: reg
   s_immJ <= std_logic_vector(resize(signed(s_IF_ID_Inst(31) & s_IF_ID_Inst(19 downto 12) & 
             s_IF_ID_Inst(20) & s_IF_ID_Inst(30 downto 21) & '0'), 32));
 
-    --Branch logic
-  BRANCH_UNIT: branch_logic
-  port map(
-    i_rs1 => s_rs1_val,
-    i_rs2 => s_rs2_val,
-    i_funct3 => s_funct3,
-    i_branch => s_Branch,
-    o_br_taken => s_BranchTaken
-  );
 
    -- Shift amount calculation
   s_ShiftAmt_ID <= s_rs2_val(4 downto 0) when (s_opcode = "0110011" and (s_funct3 = "001" or s_funct3 = "101")) else
                    s_IF_ID_Inst(24 downto 20) when (s_opcode = "0010011" and (s_funct3 = "001" or s_funct3 = "101")) else
                    (others => '0');
+
 
 
   -------------------
@@ -630,9 +638,13 @@ REGFILE: reg
       i_rs1_val     => s_rs1_val, --From reg 
       i_rs2_val     => s_rs2_val, --from reg
       i_imm         => s_immI,
+      i_immB        => s_immB,
+      i_immJ        => s_immJ,
       i_shift_amt   => s_ShiftAmt_ID,
       i_rd_addr     => s_rd,
       i_funct3      => s_funct3,
+      i_branch      => s_Branch, --FOR BRANCH SIGNAL
+      i_pc_src      => PCSrc, --Might be a problem?
       o_alu_src     => s_ID_EX_ALU_SRC,
       o_alu_ctrl    => s_ID_EX_ALU_CTRL,
       o_mem_write   => s_ID_EX_MEM_WRITE,
@@ -648,7 +660,11 @@ REGFILE: reg
       o_pc_plus4    => s_ID_EX_PC_PLUS4,
       o_rs1_val     => s_ID_EX_RS1_VAL,
       o_rs2_val     => s_ID_EX_RS2_VAL,
-      o_imm         => s_ID_EX_IMM,
+      o_imm         => s_ID_EX_IMMI,
+      o_immB        => s_ID_EX_IMMB,
+      o_immJ        => s_ID_EX_IMMJ,
+      o_branch      => s_ID_EX_BRANCH,
+      o_pc_src      => s_ID_EX_PC_SRC,
       o_shift_amt   => s_ID_EX_SHIFT_AMT,
       o_rd_addr     => s_ID_EX_RD_ADDR,
       o_funct3      => s_ID_EX_FUNCT3
@@ -670,7 +686,7 @@ MUX_ALU_B: mux2t1_N
   port map(
     i_S  => s_ID_EX_ALU_SRC,  -- control: 0 = rs2, 1 = immI
     i_D0 => s_ID_EX_RS2_VAL,    -- rs2 value (R-type)
-    i_D1 => s_ID_EX_IMM,       -- immediate (I-type)
+    i_D1 => s_ID_EX_IMMI,       -- immediate (I-type)
     o_O  => s_ALUInB      -- goes into ALU.B
   );
 
@@ -685,7 +701,17 @@ ALU0: ALUUnit
     Zero      => s_ALUZero,
     Overflow  => s_ALUOvfl);
 
-  
+
+   BRANCH_UNIT: branch_logic
+  port map(
+    i_rs1      => s_ID_EX_RS1_VAL,        -- From register file (decode stage)
+    i_rs2      => s_ID_EX_RS2_VAL,        -- From register file (decode stage)
+    i_funct3   => s_ID_EX_FUNCT3,         -- From instruction decode
+    i_branch   => s_ID_EX_BRANCH,         -- From control unit
+    o_br_taken => s_BranchTaken     -- Branch decision in decode stage
+  );
+
+
 
 
     ---------------
